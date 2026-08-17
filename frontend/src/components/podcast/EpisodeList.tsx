@@ -4,58 +4,78 @@ interface EpisodeListProps {
   episodes: Episode[];
 }
 
+import { Play } from "lucide-react";
+
+import { usePlayer } from "@/context/PlayerContext";
+
 export default function EpisodeList({
   episodes,
 }: EpisodeListProps) {
+      const { playEpisode, episode: currentEpisode } =
+    usePlayer();
   return (
     <div className="space-y-3">
       {episodes.map((episode, index) => (
-        <article
-          key={`${episode.title}-${index}`}
-          className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 transition hover:bg-zinc-800/80"
+<article
+  key={`${episode.title}-${index}`}
+  className={`rounded-2xl border p-5 transition ${
+    currentEpisode?.title === episode.title
+      ? "border-white/30 bg-zinc-800"
+      : "border-zinc-800 bg-zinc-900 hover:bg-zinc-800/80"
+  }`}
+>
+  <div className="flex items-start gap-4">
+
+    {/* Episode Number */}
+    <div className="hidden w-10 shrink-0 pt-1 text-center text-sm font-medium text-zinc-600 sm:block">
+      {index + 1}
+    </div>
+
+    <div className="min-w-0 flex-1">
+
+      {episode.published && (
+        <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+          {episode.published}
+        </p>
+      )}
+
+      <h4 className="mt-2 text-lg font-semibold text-white">
+        {episode.title}
+      </h4>
+
+      {episode.description && (
+        <p
+          className="mt-3 line-clamp-3 text-sm leading-6 text-zinc-400"
+          dangerouslySetInnerHTML={{
+            __html: episode.description,
+          }}
+        />
+      )}
+
+      <div className="mt-4 flex items-center gap-4">
+
+        <button
+          onClick={() => playEpisode(episode)}
+          disabled={!episode.audio}
+          className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <div className="flex items-start gap-4">
+          <Play className="h-4 w-4 fill-current" />
 
-            {/* Episode Number */}
-            <div className="hidden w-10 shrink-0 pt-1 text-center text-sm font-medium text-zinc-600 sm:block">
-              {index + 1}
-            </div>
+          Play
+        </button>
 
-            <div className="min-w-0 flex-1">
+        {episode.duration && (
+          <span className="text-xs text-zinc-500">
+            {episode.duration}
+          </span>
+        )}
 
-              {/* Date */}
-              {episode.published && (
-                <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-                  {episode.published}
-                </p>
-              )}
+      </div>
 
-              {/* Title */}
-              <h4 className="mt-2 text-lg font-semibold text-white">
-                {episode.title}
-              </h4>
+    </div>
 
-              {/* Description */}
-              {episode.description && (
-                <p
-                  className="mt-3 line-clamp-3 text-sm leading-6 text-zinc-400"
-                  dangerouslySetInnerHTML={{
-                    __html: episode.description,
-                  }}
-                />
-              )}
-
-              {/* Duration */}
-              {episode.duration && (
-                <p className="mt-3 text-xs text-zinc-500">
-                  {episode.duration}
-                </p>
-              )}
-
-            </div>
-
-          </div>
-        </article>
+  </div>
+</article>
       ))}
     </div>
   );
