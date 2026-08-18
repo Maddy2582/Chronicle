@@ -64,7 +64,13 @@ export default function EpisodeList({
 
       {episode.description && (
         <p
-          className="mt-3 line-clamp-3 text-sm leading-6 text-zinc-400"
+            className="
+    mt-2
+    line-clamp-3
+    text-sm
+    leading-6
+    text-zinc-400
+  "
           dangerouslySetInnerHTML={{
             __html: episode.description,
           }}
@@ -96,7 +102,22 @@ export default function EpisodeList({
   <button
     onClick={() => playEpisode(episode)}
     disabled={!episode.audio}
-    className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
+     className="
+    flex
+    min-h-11
+    items-center
+    gap-2
+    rounded-full
+    bg-white
+    px-5
+    text-sm
+    font-medium
+    text-black
+    transition
+    active:scale-95
+    disabled:cursor-not-allowed
+    disabled:opacity-40
+  "
   >
     <Play className="h-4 w-4 fill-current" />
     Play

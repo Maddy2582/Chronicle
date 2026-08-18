@@ -93,11 +93,33 @@ export default function PodcastPage() {
   return (
     <div className="space-y-8">
       {/* Podcast Header */}
-      <div className="flex flex-col gap-6 rounded-3xl bg-zinc-900 p-6 md:flex-row">
+      <div
+  className="
+    flex
+    flex-col
+    gap-5
+    rounded-3xl
+    bg-zinc-900
+    p-5
+    sm:p-6
+    md:flex-row
+  "
+>
         <img
           src={podcast.image}
           alt={podcast.title}
-          className="h-52 w-52 rounded-2xl object-cover"
+          className="
+  h-40
+  w-40
+  self-center
+  rounded-2xl
+  object-cover
+  sm:h-48
+  sm:w-48
+  md:h-52
+  md:w-52
+  md:self-auto
+"
         />
 
         <div className="flex flex-col justify-center">
@@ -105,7 +127,7 @@ export default function PodcastPage() {
             Podcast
           </p>
 
-          <h1 className="mt-2 text-4xl font-bold">
+          <h1 className="mt-2 text-3xl font-bold sm:text-4xl">
             {podcast.title}
           </h1>
 

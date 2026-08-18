@@ -158,7 +158,7 @@ if (
         handleEnded
       );
     };
-  }, []);
+  }, [markPlayed]);
 
   useEffect(() => {
     const interval = setInterval(() => {

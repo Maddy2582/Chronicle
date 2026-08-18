@@ -21,11 +21,29 @@ export default function LibraryCard({
     useLibraryStore();
 
   return (
-    <div className="group flex items-center gap-3 rounded-xl bg-zinc-900 p-3 transition hover:bg-zinc-800">
+    <div className="
+  group
+  flex
+  min-w-0
+  items-center
+  gap-3
+  rounded-2xl
+  border
+  border-zinc-800
+  bg-zinc-900
+  p-3
+  active:scale-[0.99]
+">
 
       <img
         src={podcast.image}
-        className="h-12 w-12 rounded-lg object-cover"
+        className="
+  h-14
+  w-14
+  shrink-0
+  rounded-xl
+  object-cover
+"
       />
 
       <button
