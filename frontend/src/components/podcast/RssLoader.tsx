@@ -1,28 +1,60 @@
-
 import { useState } from "react";
-import { Input } from "../../../@/components/ui/input";
-import { Button } from "../../../@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
-interface Props {
-  onLoad: (rss: string) => void;
-}
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
-export default function RssLoader({ onLoad }: Props) {
-  const [rss, setRss] = useState(
-    "https://feeds.simplecast.com/kwWc0lhf"
-  );
+import { fetchPodcast } from "@/services/podcastService";
+import { useLibraryStore } from "@/store/libraryStore";
+
+export default function RssLoader() {
+  const [rss, setRss] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
+
+  const { addPodcast } = useLibraryStore();
+
+  async function handleLoad() {
+    if (!rss.trim()) return;
+
+    setLoading(true);
+
+    try {
+      const podcast = await fetchPodcast(rss);
+
+      addPodcast({
+        rss,
+        title: podcast.title,
+        author: podcast.author,
+        image: podcast.image,
+      });
+
+      navigate(`/podcast/${encodeURIComponent(rss)}`);
+
+    } catch {
+      alert("Couldn't load RSS feed.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <div className="flex gap-3">
+    <div className="space-y-3">
+
       <Input
         value={rss}
         onChange={(e) => setRss(e.target.value)}
-        placeholder="Paste RSS Feed"
+        placeholder="Paste RSS feed URL..."
       />
 
-      <Button onClick={() => onLoad(rss)}>
-        Load Podcast
+      <Button
+        onClick={handleLoad}
+        disabled={loading}
+      >
+        {loading ? "Loading..." : "Load RSS Feed"}
       </Button>
+
     </div>
   );
 }

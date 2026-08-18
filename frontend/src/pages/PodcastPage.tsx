@@ -51,7 +51,7 @@ export default function PodcastPage() {
     if (!query) return episodes;
 
     return episodes.filter(
-      (episode: Episode, index: number) => {
+      (episode: Episode) => {
         const originalIndex =
           podcast.episodes.findIndex(
             (e) => e.guid === episode.guid

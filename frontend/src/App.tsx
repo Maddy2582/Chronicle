@@ -11,6 +11,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import LibraryPage from "@/pages/LibraryPage";
 import SearchPage from "@/pages/SearchPage";
 import PodcastPage from "@/pages/PodcastPage";
+import InstallBanner from "../src/components/pwa/InstallBanner";
 
 export default function App() {
   return (
@@ -43,6 +44,8 @@ export default function App() {
       </BrowserRouter>
 
       <Player />
+
+      <InstallBanner />
 
     </>
   );
