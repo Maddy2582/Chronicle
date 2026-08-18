@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 
 import RssLoader from "@/components/podcast/RssLoader";
 import EpisodeList from "@/components/podcast/EpisodeList";
+import { usePlayer } from "@/context/PlayerContext";
 
 import {
   fetchPodcast,
@@ -13,6 +14,7 @@ export default function Home() {
   const [podcast, setPodcast] = useState<Podcast | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { setEpisodes } = usePlayer()
 
   const loadPodcast = async (rss: string) => {
     try {
@@ -22,6 +24,8 @@ export default function Home() {
       const data = await fetchPodcast(rss);
 
       setPodcast(data);
+
+      setEpisodes(data.episodes);
     } catch (err) {
       console.error(err);
       setError("Unable to load podcast. Please check the RSS feed.");

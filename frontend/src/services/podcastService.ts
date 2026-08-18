@@ -1,9 +1,11 @@
 export interface Episode {
+  guid: string;
   title: string;
   published: string;
   description: string;
   audio: string | null;
   duration: string | null;
+  image: string | null
 }
 
 export interface Podcast {

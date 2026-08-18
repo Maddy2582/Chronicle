@@ -11,29 +11,30 @@ import type { Episode } from "@/services/podcastService";
 
 interface PlayerContextValue {
   episode: Episode | null;
+  episodes: Episode[];
 
   isPlaying: boolean;
-
   currentTime: number;
-
   duration: number;
-
   volume: number;
+  playbackRate: number;
+  skipInterval: number;
 
+  setEpisodes: (episodes: Episode[]) => void;
   playEpisode: (episode: Episode) => void;
-
   togglePlay: () => void;
-
   seek: (seconds: number) => void;
-
   setProgress: (time: number) => void;
-
   setVolume: (volume: number) => void;
+  setPlaybackRate: (rate: number) => void;
+  setSkipInterval: (seconds: number) => void;
+
+  nextEpisode: () => void;
+  previousEpisode: () => void;
 }
 
-const PlayerContext = createContext<PlayerContextValue | null>(
-  null
-);
+const PlayerContext =
+  createContext<PlayerContextValue | null>(null);
 
 export function PlayerProvider({
   children,
@@ -42,7 +43,15 @@ export function PlayerProvider({
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  const episodeRef = useRef<Episode | null>(null);
+
+  const skipIntervalRef = useRef(15);
+
+  const playbackRateRef = useRef(1);
+
   const [episode, setEpisode] = useState<Episode | null>(null);
+
+  const [episodes, setEpisodes] = useState<Episode[]>([]);
 
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -52,12 +61,24 @@ export function PlayerProvider({
 
   const [volume, setVolumeState] = useState(1);
 
+  const [playbackRate, setPlaybackRateState] = useState(1);
+
+  const [skipInterval, setSkipIntervalState] = useState(15);
+
+  useEffect(() => {
+    skipIntervalRef.current = skipInterval;
+  }, [skipInterval]);
+
+  useEffect(() => {
+    playbackRateRef.current = playbackRate;
+  }, [playbackRate]);
+
   useEffect(() => {
     const audio = new Audio();
 
     audioRef.current = audio;
 
-    audio.volume = 1;
+    audio.volume = volume;
 
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
@@ -75,10 +96,11 @@ export function PlayerProvider({
       setIsPlaying(false);
     };
 
-    audio.addEventListener(
-      "timeupdate",
-      handleTimeUpdate
-    );
+    const handleEnded = () => {
+      playNextEpisode();
+    };
+
+    audio.addEventListener("timeupdate", handleTimeUpdate);
 
     audio.addEventListener(
       "loadedmetadata",
@@ -88,6 +110,8 @@ export function PlayerProvider({
     audio.addEventListener("play", handlePlay);
 
     audio.addEventListener("pause", handlePause);
+
+    audio.addEventListener("ended", handleEnded);
 
     return () => {
       audio.pause();
@@ -111,10 +135,36 @@ export function PlayerProvider({
         "pause",
         handlePause
       );
+
+      audio.removeEventListener(
+        "ended",
+        handleEnded
+      );
     };
   }, []);
 
-  const playEpisode = (newEpisode: Episode) => {
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const audio = audioRef.current;
+
+      const currentEpisode = episodeRef.current;
+
+      if (!audio || !currentEpisode) {
+        return;
+      }
+
+      localStorage.setItem(
+        `chronicle-progress-${currentEpisode.guid}`,
+        audio.currentTime.toString()
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const playEpisode = (
+    newEpisode: Episode
+  ) => {
     const audio = audioRef.current;
 
     if (!audio || !newEpisode.audio) {
@@ -125,26 +175,30 @@ export function PlayerProvider({
 
     audio.src = newEpisode.audio;
 
-    audio.currentTime = 0;
+    audio.playbackRate =
+      playbackRateRef.current;
+
+    const savedProgress =
+      localStorage.getItem(
+        `chronicle-progress-${newEpisode.guid}`
+      );
+
+    audio.currentTime =
+      savedProgress
+        ? Number(savedProgress)
+        : 0;
 
     setEpisode(newEpisode);
 
-    setCurrentTime(0);
+    episodeRef.current = newEpisode;
 
-    audio
-      .play()
-      .catch((error) => {
-        console.error(
-          "Unable to play episode:",
-          error
-        );
-      });
+    audio.play().catch(console.error);
   };
 
   const togglePlay = () => {
     const audio = audioRef.current;
 
-    if (!audio || !episode) {
+    if (!audio || !episodeRef.current) {
       return;
     }
 
@@ -155,7 +209,9 @@ export function PlayerProvider({
     }
   };
 
-  const seek = (seconds: number) => {
+  const seek = (
+    seconds: number
+  ) => {
     const audio = audioRef.current;
 
     if (!audio) {
@@ -171,7 +227,9 @@ export function PlayerProvider({
     );
   };
 
-  const setProgress = (time: number) => {
+  const setProgress = (
+    time: number
+  ) => {
     const audio = audioRef.current;
 
     if (!audio) {
@@ -183,7 +241,9 @@ export function PlayerProvider({
     setCurrentTime(time);
   };
 
-  const setVolume = (newVolume: number) => {
+  const setVolume = (
+    newVolume: number
+  ) => {
     const audio = audioRef.current;
 
     if (!audio) {
@@ -195,19 +255,135 @@ export function PlayerProvider({
     setVolumeState(newVolume);
   };
 
+  const setPlaybackRate = (
+    rate: number
+  ) => {
+    const audio = audioRef.current;
+
+    if (audio) {
+      audio.playbackRate = rate;
+    }
+
+    setPlaybackRateState(rate);
+  };
+
+  const setSkipInterval = (
+    seconds: number
+  ) => {
+    setSkipIntervalState(seconds);
+  };
+
+  const playNextEpisode = () => {
+    const currentEpisode = episodeRef.current;
+
+    if (!currentEpisode) {
+      return;
+    }
+
+    const index =
+      episodes.findIndex(
+        (item) =>
+          item.guid === currentEpisode.guid
+      );
+
+    if (
+      index === -1 ||
+      index === episodes.length - 1
+    ) {
+      return;
+    }
+
+    playEpisode(episodes[index + 1]);
+  };
+
+  const playPreviousEpisode = () => {
+    const currentEpisode = episodeRef.current;
+
+    if (!currentEpisode) {
+      return;
+    }
+
+    const index =
+      episodes.findIndex(
+        (item) =>
+          item.guid === currentEpisode.guid
+      );
+
+    if (index <= 0) {
+      return;
+    }
+
+    playEpisode(episodes[index - 1]);
+  };
+
+  useEffect(() => {
+    const handleKeyboard = (
+      event: KeyboardEvent
+    ) => {
+      if (
+        event.target instanceof
+          HTMLInputElement ||
+        event.target instanceof
+          HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      switch (event.code) {
+        case "Space":
+          event.preventDefault();
+          togglePlay();
+          break;
+
+        case "ArrowLeft":
+          event.preventDefault();
+          seek(-skipIntervalRef.current);
+          break;
+
+        case "ArrowRight":
+          event.preventDefault();
+          seek(skipIntervalRef.current);
+          break;
+      }
+    };
+
+    window.addEventListener(
+      "keydown",
+      handleKeyboard
+    );
+
+    return () =>
+      window.removeEventListener(
+        "keydown",
+        handleKeyboard
+      );
+  }, []);
+
   return (
     <PlayerContext.Provider
       value={{
         episode,
+        episodes,
+
         isPlaying,
         currentTime,
         duration,
         volume,
+        playbackRate,
+        skipInterval,
+
+        setEpisodes,
         playEpisode,
         togglePlay,
         seek,
         setProgress,
         setVolume,
+        setPlaybackRate,
+        setSkipInterval,
+
+        nextEpisode: playNextEpisode,
+        previousEpisode:
+          playPreviousEpisode,
       }}
     >
       {children}
@@ -216,7 +392,8 @@ export function PlayerProvider({
 }
 
 export function usePlayer() {
-  const context = useContext(PlayerContext);
+  const context =
+    useContext(PlayerContext);
 
   if (!context) {
     throw new Error(
