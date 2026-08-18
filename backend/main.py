@@ -8,7 +8,9 @@ app = FastAPI(title="Chronicle API")
 # Allow the React frontend to access the API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173",
+                   "http://192.168.88.7:5173",
+                   "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -57,6 +59,39 @@ async def get_podcast(rss: str):
             "episodeCount": len(episodes),
             "episodes": episodes
         }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/search")
+async def search_podcasts(query: str):
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            response = await client.get(
+                "https://itunes.apple.com/search",
+                params={
+                    "term": query,
+                    "entity": "podcast",
+                    "limit": 20,
+                },
+            )
+
+            response.raise_for_status()
+
+            data = response.json()
+
+        results = []
+
+        for item in data["results"]:
+            results.append({
+                "id": item.get("collectionId"),
+                "title": item.get("collectionName"),
+                "author": item.get("artistName"),
+                "image": item.get("artworkUrl600"),
+                "rss": item.get("feedUrl"),
+            })
+
+        return {"results": results}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

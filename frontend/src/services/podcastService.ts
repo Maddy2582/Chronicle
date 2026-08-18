@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "@/config";
+
 export interface Episode {
   guid: string;
   title: string;
@@ -18,10 +20,11 @@ export interface Podcast {
 }
 
 export async function fetchPodcast(rss: string): Promise<Podcast> {
-  const url =
-    `http://localhost:8000/podcast?rss=${encodeURIComponent(rss)}`;
 
-  const response = await fetch(url);
+
+  const response = await fetch(
+    `${API_BASE_URL}/podcast?rss=${encodeURIComponent(rss)}`
+  );
 
   if (!response.ok) {
     throw new Error("Failed to load podcast");

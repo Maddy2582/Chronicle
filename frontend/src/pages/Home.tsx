@@ -101,33 +101,13 @@ export default function Home() {
           </div>
 
           {/* RSS Loader */}
-          {/* <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
             <p className="mb-3 text-sm font-medium">
               Add Podcast
             </p>
 
             <RssLoader onLoad={loadPodcast} />
-          </div> */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-
-  <h3 className="mb-4 text-lg font-semibold">
-    Discover Podcasts
-  </h3>
-
-  <PodcastSearch />
-  <details className="mt-6">
-
-  <summary className="cursor-pointer text-sm text-zinc-500">
-    Advanced: Load using RSS
-  </summary>
-
-  <div className="mt-3">
-    <RssLoader onLoad={loadPodcast} />
-  </div>
-
-</details>
-
-</div>
+          </div>
 
           {/* Loading */}
           {loading && (

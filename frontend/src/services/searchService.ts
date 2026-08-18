@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "@/config";
+
 export interface SearchResult {
   id: number;
   title: string;
@@ -9,9 +11,8 @@ export interface SearchResult {
 export async function searchPodcasts(
   query: string
 ): Promise<{ results: SearchResult[] }> {
-
   const response = await fetch(
-    `http://localhost:8000/search?query=${encodeURIComponent(query)}`
+    `${API_BASE_URL}/search?query=${encodeURIComponent(query)}`
   );
 
   if (!response.ok) {
