@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import type { Episode } from "@/services/podcastService";
+import { useEpisodeStore } from "@/store/episodeStore";
 
 interface PlayerContextValue {
   episode: Episode | null;
@@ -65,6 +66,9 @@ export function PlayerProvider({
 
   const [skipInterval, setSkipIntervalState] = useState(15);
 
+  const { markPlayed } =
+  useEpisodeStore();
+
   useEffect(() => {
     skipIntervalRef.current = skipInterval;
   }, [skipInterval]);
@@ -81,7 +85,20 @@ export function PlayerProvider({
     audio.volume = volume;
 
     const handleTimeUpdate = () => {
+      
       setCurrentTime(audio.currentTime);
+      const progress =
+  audio.currentTime /
+  (audio.duration || 1);
+
+if (
+  progress >= 0.9 &&
+  episodeRef.current
+) {
+  markPlayed(
+    episodeRef.current.guid
+  );
+}
     };
 
     const handleLoadedMetadata = () => {

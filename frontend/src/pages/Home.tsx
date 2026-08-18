@@ -4,6 +4,10 @@ import { Loader2 } from "lucide-react";
 import RssLoader from "@/components/podcast/RssLoader";
 import EpisodeList from "@/components/podcast/EpisodeList";
 import { usePlayer } from "@/context/PlayerContext";
+import PodcastSearch from "@/components/podcast/PodcastSearch";
+import LibraryCard from "@/components/podcast/LibraryCard";
+
+import { useLibraryStore } from "@/store/libraryStore";
 
 import {
   fetchPodcast,
@@ -15,6 +19,10 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { setEpisodes } = usePlayer()
+  const { podcasts } = useLibraryStore();
+  const openPodcast = async (rss: string) => {
+  await loadPodcast(rss);
+};
 
   const loadPodcast = async (rss: string) => {
     try {
@@ -38,33 +46,43 @@ export default function Home() {
     <div className="flex h-screen bg-[#0f0f10] text-white">
 
       {/* Desktop Sidebar */}
-      <aside className="hidden w-72 shrink-0 flex-col border-r border-zinc-800 p-6 md:flex">
-        <h1 className="text-3xl font-bold">
-          Chronicle
-        </h1>
+<div className="mt-8">
 
-        <p className="mt-2 text-sm text-zinc-400">
-          Start from Episode 1.
-        </p>
+  <div className="mb-4 flex items-center justify-between">
 
-        <div className="mt-8">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-            Your Library
-          </p>
+    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+      Your Library
+    </p>
 
-          {podcast && (
-            <div className="rounded-xl bg-zinc-900 p-3">
-              {podcast.title}
-            </div>
-          )}
+    <span className="text-xs text-zinc-500">
+      {podcasts.length}
+    </span>
 
-          {!podcast && (
-            <p className="text-sm text-zinc-500">
-              No podcasts added yet.
-            </p>
-          )}
-        </div>
-      </aside>
+  </div>
+
+  <div className="space-y-3">
+
+    {podcasts.length === 0 ? (
+
+      <p className="text-sm text-zinc-500">
+        Search and add your first podcast.
+      </p>
+
+    ) : (
+
+      podcasts.map((podcast) => (
+        <LibraryCard
+          key={podcast.rss}
+          podcast={podcast}
+          onOpen={openPodcast}
+        />
+      ))
+
+    )}
+
+  </div>
+
+</div>
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto pb-24 md:pb-8">
@@ -83,13 +101,33 @@ export default function Home() {
           </div>
 
           {/* RSS Loader */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+          {/* <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
             <p className="mb-3 text-sm font-medium">
               Add Podcast
             </p>
 
             <RssLoader onLoad={loadPodcast} />
-          </div>
+          </div> */}
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+
+  <h3 className="mb-4 text-lg font-semibold">
+    Discover Podcasts
+  </h3>
+
+  <PodcastSearch />
+  <details className="mt-6">
+
+  <summary className="cursor-pointer text-sm text-zinc-500">
+    Advanced: Load using RSS
+  </summary>
+
+  <div className="mt-3">
+    <RssLoader onLoad={loadPodcast} />
+  </div>
+
+</details>
+
+</div>
 
           {/* Loading */}
           {loading && (
