@@ -4,6 +4,13 @@ import httpx
 import feedparser
 from database import Base
 from database import engine
+import models
+from fastapi import Depends
+from sqlalchemy.orm import Session
+
+from database import get_db
+import crud
+import schemas
 
 app = FastAPI(title="Chronicle API")
 
@@ -98,3 +105,25 @@ async def search_podcasts(query: str):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/library")
+def get_library(db: Session = Depends(get_db)):
+    return crud.get_library(db)
+
+
+@app.post("/library")
+def add_library(
+    podcast: schemas.LibraryPodcastCreate,
+    db: Session = Depends(get_db),
+):
+    return crud.add_library(db, podcast)
+
+
+@app.delete("/library/{rss:path}")
+def delete_library(
+    rss: str,
+    db: Session = Depends(get_db),
+):
+    crud.remove_library(db, rss)
+
+    return {"success": True}
