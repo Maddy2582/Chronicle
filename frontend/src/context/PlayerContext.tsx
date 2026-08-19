@@ -27,11 +27,15 @@ interface PlayerContextValue {
   playbackRate: number;
   skipInterval: number;
 
-  setEpisodes: (episodes: Episode[]) => void;
+setEpisodes: (episodes: Episode[]) => void;
 
-  playEpisode: (
-    episode: Episode
-  ) => Promise<void>;
+loadEpisode: (
+  episode: Episode
+) => Promise<void>;
+
+playEpisode: (
+  episode: Episode
+) => Promise<void>;
 
   togglePlay: () => void;
 
@@ -265,59 +269,33 @@ export function PlayerProvider({
         );
       };
 
-    const handleEnded =
-      () => {
-        /*
-         * Episode is effectively complete.
-         */
+const handleEnded = () => {
+  /*
+   * Episode has finished.
+   * Mark it as played.
+   */
 
-        if (episodeRef.current) {
-          markPlayed(
-            episodeRef.current.guid
-          ).catch(console.error);
-        }
+  if (episodeRef.current) {
+    markPlayed(
+      episodeRef.current.guid
+    ).catch(console.error);
+  }
 
-        /*
-         * Save final progress.
-         */
+  /*
+   * Save final progress.
+   */
 
-        saveProgress().catch(
-          console.error
-        );
+  saveProgress().catch(
+    console.error
+  );
 
-        /*
-         * Automatically move to
-         * the next episode.
-         */
+  /*
+   * Do NOT automatically start
+   * the next episode.
+   */
 
-        const currentEpisode =
-          episodeRef.current;
-
-        if (!currentEpisode) {
-          return;
-        }
-
-        const index =
-          episodesRef.current.findIndex(
-            (item) =>
-              item.guid ===
-              currentEpisode.guid
-          );
-
-        if (
-          index === -1 ||
-          index ===
-            episodesRef.current.length - 1
-        ) {
-          return;
-        }
-
-        playEpisode(
-          episodesRef.current[
-            index + 1
-          ]
-        ).catch(console.error);
-      };
+  setIsPlaying(false);
+};
 
     audio.addEventListener(
       "timeupdate",
@@ -430,165 +408,156 @@ export function PlayerProvider({
    * from Hermes before playback begins.
    */
 
-  const playEpisode = async (
-    newEpisode: Episode
-  ) => {
-    const audio =
-      audioRef.current;
+const loadEpisode = async (
+  newEpisode: Episode
+) => {
+  const audio =
+    audioRef.current;
 
-    if (
-      !audio ||
-      !newEpisode.audio
-    ) {
-      return;
-    }
+  if (
+    !audio ||
+    !newEpisode.audio
+  ) {
+    return;
+  }
 
-    /*
-     * Save the previous episode's
-     * position before switching.
-     */
+  /*
+   * Save the previous episode's
+   * position before switching.
+   */
 
-    if (
-      episodeRef.current &&
-      episodeRef.current.guid !==
+  if (
+    episodeRef.current &&
+    episodeRef.current.guid !==
+      newEpisode.guid
+  ) {
+    await saveProgress();
+  }
+
+  /*
+   * Stop current playback.
+   */
+
+  audio.pause();
+
+  /*
+   * Set new episode.
+   */
+
+  setEpisode(newEpisode);
+
+  episodeRef.current =
+    newEpisode;
+
+  setCurrentTime(0);
+
+  setDuration(0);
+
+  /*
+   * Set audio source.
+   */
+
+  audio.src =
+    newEpisode.audio;
+
+  audio.playbackRate =
+    playbackRateRef.current;
+
+  /*
+   * Get latest progress
+   * from Hermes.
+   */
+
+  let progressMap:
+    Record<string, number> = {};
+
+  try {
+    progressMap =
+      await fetchProgress();
+  } catch (error) {
+    console.error(
+      "Failed to load playback progress:",
+      error
+    );
+  }
+
+  const savedProgress =
+    Number(
+      progressMap[
         newEpisode.guid
-    ) {
-      await saveProgress();
-    }
-
-    /*
-     * Stop current playback.
-     */
-
-    audio.pause();
-
-    /*
-     * Set the new episode.
-     */
-
-    setEpisode(newEpisode);
-
-    episodeRef.current =
-      newEpisode;
-
-    setCurrentTime(0);
-
-    setDuration(0);
-
-    /*
-     * Set audio source.
-     */
-
-    audio.src =
-      newEpisode.audio;
-
-    audio.playbackRate =
-      playbackRateRef.current;
-
-    /*
-     * Ask Hermes for the latest
-     * progress for this episode.
-     */
-
-    let progressMap:
-      Record<string, number> = {};
-
-    try {
-      progressMap =
-        await fetchProgress();
-    } catch (error) {
-      console.error(
-        "Failed to load playback progress:",
-        error
-      );
-    }
-
-    const savedProgress =
-      Number(
-        progressMap[
-          newEpisode.guid
-        ] ?? 0
-      );
-
-    /*
-     * Wait until the browser knows
-     * the audio metadata before
-     * setting currentTime.
-     */
-
-    await new Promise<void>(
-      (resolve) => {
-        if (
-          audio.readyState >= 1
-        ) {
-          resolve();
-          return;
-        }
-
-        const handleMetadata =
-          () => {
-            audio.removeEventListener(
-              "loadedmetadata",
-              handleMetadata
-            );
-
-            resolve();
-          };
-
-        audio.addEventListener(
-          "loadedmetadata",
-          handleMetadata
-        );
-      }
+      ] ?? 0
     );
 
-    /*
-     * Make sure the saved progress
-     * is within the episode duration.
-     */
+  /*
+   * Wait for audio metadata.
+   */
 
-    if (
-      Number.isFinite(
-        audio.duration
-      ) &&
-      audio.duration > 0
-    ) {
-      audio.currentTime =
-        Math.min(
-          savedProgress,
-          Math.max(
-            0,
-            audio.duration - 1
-          )
-        );
-    } else {
-      audio.currentTime =
+  await new Promise<void>(
+    (resolve) => {
+      if (
+        audio.readyState >= 1
+      ) {
+        resolve();
+        return;
+      }
+
+      const handleMetadata =
+        () => {
+          audio.removeEventListener(
+            "loadedmetadata",
+            handleMetadata
+          );
+
+          resolve();
+        };
+
+      audio.addEventListener(
+        "loadedmetadata",
+        handleMetadata
+      );
+    }
+  );
+
+  /*
+   * Restore saved position.
+   */
+
+  if (
+    Number.isFinite(
+      audio.duration
+    ) &&
+    audio.duration > 0
+  ) {
+    audio.currentTime =
+      Math.min(
+        savedProgress,
         Math.max(
           0,
-          savedProgress
-        );
-    }
-
-    setCurrentTime(
-      audio.currentTime
-    );
-
-    lastSavedProgressRef.current =
-      audio.currentTime;
-
-    /*
-     * Start playback.
-     */
-
-    try {
-      await audio.play();
-    } catch (error) {
-      console.error(
-        "Failed to start playback:",
-        error
+          audio.duration - 1
+        )
       );
-    }
-  };
+  } else {
+    audio.currentTime =
+      Math.max(
+        0,
+        savedProgress
+      );
+  }
+
+  setCurrentTime(
+    audio.currentTime
+  );
+
+  lastSavedProgressRef.current =
+    audio.currentTime;
+
+  /*
+   * IMPORTANT:
+   *
+   * We intentionally do NOT call
+   * audio.play() here.
+   */
+};
 
   /*
    * Play / pause.
@@ -614,6 +583,30 @@ export function PlayerProvider({
         audio.pause();
       }
     };
+
+    const playEpisode = async (
+  newEpisode: Episode
+) => {
+  await loadEpisode(
+    newEpisode
+  );
+
+  const audio =
+    audioRef.current;
+
+  if (!audio) {
+    return;
+  }
+
+  try {
+    await audio.play();
+  } catch (error) {
+    console.error(
+      "Failed to start playback:",
+      error
+    );
+  }
+};
 
   /*
    * Seek forward / backward.
@@ -897,6 +890,8 @@ export function PlayerProvider({
         setPlaybackRate,
 
         setSkipInterval,
+
+        loadEpisode,
 
         nextEpisode:
           playNextEpisode,
