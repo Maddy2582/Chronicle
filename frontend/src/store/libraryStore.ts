@@ -1,7 +1,13 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+
+import {
+  addLibraryPodcast,
+  fetchLibrary,
+  removeLibraryPodcast,
+} from "@/services/libraryService";
 
 export interface LibraryPodcast {
+  id?: number;
   rss: string;
   appleId?: number;
   title: string;
@@ -12,46 +18,89 @@ export interface LibraryPodcast {
 interface LibraryState {
   podcasts: LibraryPodcast[];
 
-  addPodcast: (podcast: LibraryPodcast) => void;
+  loading: boolean;
 
-  removePodcast: (rss: string) => void;
+  loadLibrary: () => Promise<void>;
+
+  addPodcast: (
+    podcast: LibraryPodcast
+  ) => Promise<void>;
+
+  removePodcast: (
+    rss: string
+  ) => Promise<void>;
 }
 
 export const useLibraryStore =
-  create<LibraryState>()(
-    persist(
-      (set) => ({
-        podcasts: [],
+  create<LibraryState>((set, get) => ({
+    podcasts: [],
 
-        addPodcast: (podcast) =>
-          set((state) => {
-            if (
-              state.podcasts.some(
-                (p) => p.rss === podcast.rss
-              )
-            ) {
-              return state;
-            }
+    loading: false,
 
-            return {
-              podcasts: [
-                ...state.podcasts,
-                podcast,
-              ],
-            };
-          }),
+    loadLibrary: async () => {
+      set({ loading: true });
 
-        removePodcast: (rss) =>
-          set((state) => ({
-            podcasts:
-              state.podcasts.filter(
-                (p) => p.rss !== rss
-              ),
-          })),
-      }),
+      try {
+        const podcasts =
+          await fetchLibrary();
 
-      {
-        name: "chronicle-library",
+        set({
+          podcasts,
+          loading: false,
+        });
+      } catch (error) {
+        console.error(error);
+
+        set({ loading: false });
       }
-    )
-  );
+    },
+
+    addPodcast: async (podcast) => {
+      if (
+        get().podcasts.some(
+          (p) => p.rss === podcast.rss
+        )
+      ) {
+        return;
+      }
+
+      set({
+        podcasts: [
+          ...get().podcasts,
+          podcast,
+        ],
+      });
+
+      try {
+        await addLibraryPodcast(podcast);
+
+        await get().loadLibrary();
+      } catch (error) {
+        console.error(error);
+      }
+    },
+
+    removePodcast: async (rss) => {
+      const previous =
+        get().podcasts;
+
+      set({
+        podcasts:
+          previous.filter(
+            (p) => p.rss !== rss
+          ),
+      });
+
+      try {
+        await removeLibraryPodcast(rss);
+
+        await get().loadLibrary();
+      } catch (error) {
+        console.error(error);
+
+        set({
+          podcasts: previous,
+        });
+      }
+    },
+  }));

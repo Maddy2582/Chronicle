@@ -124,20 +124,20 @@ export default function PodcastSearch() {
 
               </div>
 
-              <Button
-                disabled={alreadyAdded}
-                onClick={() =>{
-                  addPodcast({
-                    rss: podcast.rss,
-                    appleId: podcast.id,
-                    title: podcast.title,
-                    author: podcast.author,
-                    image: podcast.image,
-                  });
+<Button
+  disabled={alreadyAdded}
+  onClick={async () => {
+    await addPodcast({
+      rss: podcast.rss,
+      appleId: podcast.id,
+      title: podcast.title,
+      author: podcast.author,
+      image: podcast.image,
+    });
 
-                  navigate(`/podcast/${encodeURIComponent(podcast.rss)}`);
-                }}
-              >
+    navigate(`/podcast/${encodeURIComponent(podcast.rss)}`);
+  }}
+>
 
                 {alreadyAdded ? (
                   <>

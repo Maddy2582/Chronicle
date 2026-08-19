@@ -21,16 +21,16 @@ export default function RssLoader() {
     setLoading(true);
 
     try {
-      const podcast = await fetchPodcast(rss);
+const podcast = await fetchPodcast(rss);
 
-      addPodcast({
-        rss,
-        title: podcast.title,
-        author: podcast.author,
-        image: podcast.image,
-      });
+await addPodcast({
+  rss,
+  title: podcast.title,
+  author: podcast.author,
+  image: podcast.image,
+});
 
-      navigate(`/podcast/${encodeURIComponent(rss)}`);
+navigate(`/podcast/${encodeURIComponent(rss)}`);
 
     } catch {
       alert("Couldn't load RSS feed.");
