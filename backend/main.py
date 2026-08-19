@@ -127,3 +127,31 @@ def delete_library(
     crud.remove_library(db, rss)
 
     return {"success": True}
+
+@app.get("/played")
+def get_played(
+    db: Session = Depends(get_db),
+):
+    return crud.get_played(db)
+
+
+@app.post("/played")
+def update_played(
+    played: schemas.PlayedEpisodeUpdate,
+    db: Session = Depends(get_db),
+):
+    return crud.update_played(db, played)
+
+@app.get("/progress")
+def get_progress(
+    db: Session = Depends(get_db),
+):
+    return crud.get_progress(db)
+
+
+@app.post("/progress")
+def update_progress(
+    progress: schemas.PlaybackProgressUpdate,
+    db: Session = Depends(get_db),
+):
+    return crud.update_progress(db, progress)
