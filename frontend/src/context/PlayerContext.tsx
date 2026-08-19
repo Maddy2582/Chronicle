@@ -20,6 +20,8 @@ interface PlayerContextValue {
   episode: Episode | null;
   episodes: Episode[];
 
+  progress: Record<string, number>;
+
   isPlaying: boolean;
   currentTime: number;
   duration: number;
@@ -91,6 +93,9 @@ export function PlayerProvider({
   const [episodes, setEpisodes] =
     useState<Episode[]>([]);
 
+  const [progress, setProgressMap]= 
+    useState<Record<string, number>>({});
+
   const [isPlaying, setIsPlaying] =
     useState(false);
 
@@ -145,6 +150,23 @@ export function PlayerProvider({
   }, []);
 
   /*
+ * Load playback progress from Hermes
+ * when Chronicle starts.
+ */
+useEffect(() => {
+  fetchProgress()
+    .then((progressMap) => {
+      setProgressMap(progressMap);
+    })
+    .catch((error) => {
+      console.error(
+        "Failed to load playback progress:",
+        error
+      );
+    });
+}, []);
+
+  /*
    * Save current playback position
    * to Hermes.
    *
@@ -188,13 +210,19 @@ export function PlayerProvider({
     savingProgressRef.current = true;
 
     try {
-      await updateProgress(
-        currentEpisode.guid,
-        audio.currentTime
-      );
+await updateProgress(
+  currentEpisode.guid,
+  audio.currentTime
+);
 
-      lastSavedProgressRef.current =
-        audio.currentTime;
+lastSavedProgressRef.current =
+  audio.currentTime;
+
+setProgressMap((current) => ({
+  ...current,
+  [currentEpisode.guid]:
+    audio.currentTime,
+}));
     } catch (error) {
       console.error(
         "Failed to save playback progress:",
@@ -468,25 +496,29 @@ const loadEpisode = async (
    * from Hermes.
    */
 
-  let progressMap:
-    Record<string, number> = {};
+let latestProgress:
+  Record<string, number> = {};
 
-  try {
-    progressMap =
-      await fetchProgress();
-  } catch (error) {
-    console.error(
-      "Failed to load playback progress:",
-      error
-    );
-  }
+try {
+  latestProgress =
+    await fetchProgress();
 
-  const savedProgress =
-    Number(
-      progressMap[
-        newEpisode.guid
-      ] ?? 0
-    );
+  setProgressMap(
+    latestProgress
+  );
+} catch (error) {
+  console.error(
+    "Failed to load playback progress:",
+    error
+  );
+}
+
+const savedProgress =
+  Number(
+    latestProgress[
+      newEpisode.guid
+    ] ?? 0
+  );
 
   /*
    * Wait for audio metadata.
@@ -862,6 +894,8 @@ const loadEpisode = async (
         episode,
 
         episodes,
+
+        progress,
 
         isPlaying,
 

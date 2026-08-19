@@ -170,6 +170,7 @@ export default function PodcastPage() {
       {/* Episode List */}
       <EpisodeList
         episodes={filteredEpisodes}
+        podcastRss={decodeURIComponent(rss!)}
       />
     </div>
   );
