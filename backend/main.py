@@ -2,9 +2,12 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import feedparser
+from database import Base
+from database import engine
 
 app = FastAPI(title="Chronicle API")
 
+Base.metadata.create_all(bind=engine)
 # Allow the React frontend to access the API
 app.add_middleware(
     CORSMiddleware,
